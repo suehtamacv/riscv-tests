@@ -629,6 +629,59 @@ test_ ## testnum: \
 // ^ x30 is used in some other macros, to avoid issues we use x31 for upper word
 
 #-----------------------------------------------------------------------
+# RV64UV MACROS
+#-----------------------------------------------------------------------
+
+#define TEST_CASE_VEC( testnum, code... )   \
+test ## testnum:                            \
+ li TESTNUM, testnum;                       \
+ code;
+
+#define CREATE_VEC(name, type, value...) .pushsection .data; .align 4; name: type value; .popsection
+#define CREATE_VEC_8b(name, value...) CREATE_VEC(name, .byte, value)
+#define CREATE_VEC_16b(name, value...) CREATE_VEC(name, .half, value)
+#define CREATE_VEC_32b(name, value...) CREATE_VEC(name, .word, value)
+#define CREATE_VEC_64b(name, value...) CREATE_VEC(name, .dword, value)
+
+#define LOAD_VEC(vd, name, insn) la t0, name; insn vd, (t0);
+#define LOAD_VEC_8bu(vd, name) LOAD_VEC(vd, name, vlbu.v)
+#define LOAD_VEC_8b(vd, name) LOAD_VEC(vd, name, vlb.v)
+#define LOAD_VEC_16bu(vd, name) LOAD_VEC(vd, name, vlhu.v)
+#define LOAD_VEC_16b(vd, name) LOAD_VEC(vd, name, vlh.v)
+#define LOAD_VEC_32bu(vd, name) LOAD_VEC(vd, name, vlwu.v)
+#define LOAD_VEC_32b(vd, name) LOAD_VEC(vd, name, vlw.v)
+#define LOAD_VEC_64b(vd, name) LOAD_VEC(vd, name, vle.v)
+
+#define STORE_VEC(vd, name, insn) la t0, name; insn vd, (t0);
+#define STORE_VEC_8b(vd, name) STORE_VEC(vd, name, vsb.v)
+#define STORE_VEC_16b(vd, name) STORE_VEC(vd, name, vsh.v)
+#define STORE_VEC_32b(vd, name) STORE_VEC(vd, name, vsw.v)
+#define STORE_VEC_64b(vd, name) STORE_VEC(vd, name, vse.v)
+
+#define COMP_VEC(A, B, len, insn, size)          \
+ li t0, len;                                     \
+ la t1, A;                                       \
+ la t2, B;                                       \
+1:                                               \
+ insn t3, (t1);                                  \
+ insn t4, (t2);                                  \
+ bne t3, t4, fail;                               \
+ addi t0, t0, -1;                                \
+ add t1, t1, size;                               \
+ add t2, t2, size;                               \
+ bnez t0, 1b;
+
+#define COMP_VEC_8bu(A, B, len) COMP_VEC(A, B, len, lbu, 1)
+#define COMP_VEC_8b(A, B, len) COMP_VEC(A, B, len, lb, 1)
+#define COMP_VEC_16bu(A, B, len) COMP_VEC(A, B, len, lhu, 2)
+#define COMP_VEC_16b(A, B, len) COMP_VEC(A, B, len, lh, 2)
+#define COMP_VEC_32bu(A, B, len) COMP_VEC(A, B, len, lwu, 4)
+#define COMP_VEC_32b(A, B, len) COMP_VEC(A, B, len, lw, 4)
+#define COMP_VEC_64b(A, B, len) COMP_VEC(A, B, len, ld, 8)
+
+#define SET_VL(rd, vl, type...) li t0, vl; vsetvli rd, t0, type;
+
+#-----------------------------------------------------------------------
 # Pass and fail code (assumes test num is in TESTNUM)
 #-----------------------------------------------------------------------
 
